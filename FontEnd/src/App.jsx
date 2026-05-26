@@ -5,22 +5,21 @@ import './App.css'
 function App() {
   const [tareas, setTareas] = useState([])
   const [error, setError] = useState(null)
-  const [nuevaTareaTexto, setNuevaTareaTexto] = useState('') // Estado para el input de texto
+  const [nuevaTareaTexto, setNuevaTareaTexto] = useState('')
 
-  // Función para cargar las tareas (GET)
   const cargarTareas = () => {
     fetch('http://localhost:3000/api/tareas')
       .then(response => {
-        if (!response.ok) throw new Error('No se pudo conectar con el servidor')
+        if (!response.ok) throw new Error('Error al conectar')
         return response.json()
       })
       .then(data => {
-        setTareas(data)
+        setTareas(data) // MongoDB nos devuelve un arreglo de objetos con _id
         setError(null)
       })
       .catch(err => {
         console.error(err)
-        setError('¡Error! Asegúrate de que tu Backend (terminal negra) esté corriendo.')
+        setError('¡Error! Asegúrate de que el Backend esté corriendo.')
       })
   }
 
@@ -28,36 +27,34 @@ function App() {
     cargarTareas()
   }, [])
 
-  // Función para AGREGAR una tarea (POST)
   const agregarTarea = (e) => {
-    e.preventDefault() // Evita que la página se recargue
-    if (!nuevaTareaTexto.trim()) return // No agregar si está vacío
+    e.preventDefault()
+    if (!nuevaTareaTexto.trim()) return
 
     fetch('http://localhost:3000/api/tareas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ texto: nuevaTareaTexto })
     })
-      .then(response => response.json())
       .then(() => {
-        setNuevaTareaTexto('') // Limpiamos el input
-        cargarTareas() // Recargamos la lista actualizada
+        setNuevaTareaTexto('')
+        cargarTareas()
       })
       .catch(err => console.error("Error al agregar:", err))
   }
 
-  // Función para MARCAR COMO COMPLETADA o PENDIENTE (PUT)
+  // AJUSTE: Usamos tarea._id en lugar de tarea.id
   const alternarEstadoTarea = (id, estadoActual) => {
     fetch(`http://localhost:3000/api/tareas/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hecha: !estadoActual }) // Mandamos el estado invertido
+      body: JSON.stringify({ hecha: !estadoActual })
     })
       .then(() => cargarTareas())
       .catch(err => console.error("Error al actualizar:", err))
   }
 
-  // Función para ELIMINAR una tarea (DELETE)
+  // AJUSTE: Usamos tarea._id en lugar de tarea.id
   const eliminarTarea = (id) => {
     fetch(`http://localhost:3000/api/tareas/${id}`, {
       method: 'DELETE'
@@ -69,50 +66,42 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1> Gestor de Tareas </h1>
-        <p>Proyecto Full Stack - Actividad 1</p>
+        <h1>🚀 Mi Gestor de Tareas (DB)</h1>
+        <p>Conectado a MongoDB</p>
       </header>
 
       <main>
         {error && <div className="error-mensaje">{error}</div>}
         
-        {/* FORMULARIO PARA AGREGAR NUEVA TAREA */}
-        {!error && (
-          <form onSubmit={agregarTarea} className="formulario-tarea">
-            <input 
-              type="text" 
-              placeholder="Escribe una nueva tarea..." 
-              value={nuevaTareaTexto}
-              onChange={(e) => setNuevaTareaTexto(e.target.value)}
-            />
-            <button type="submit">Agregar</button>
-          </form>
-        )}
+        <form onSubmit={agregarTarea} className="formulario-tarea">
+          <input 
+            type="text" 
+            placeholder="Nueva tarea..." 
+            value={nuevaTareaTexto}
+            onChange={(e) => setNuevaTareaTexto(e.target.value)}
+          />
+          <button type="submit">Agregar</button>
+        </form>
 
         <div className="lista-tareas">
-          {tareas.length === 0 && !error ? <p>No hay tareas pendientes. ¡Buen trabajo!</p> : null}
-          
           {tareas.map(tarea => (
-            <div key={tarea.id} className={`tarjeta-tarea ${tarea.hecha ? 'completada' : ''}`}>
+            // AJUSTE: Usamos tarea._id como key única
+            <div key={tarea._id} className={`tarjeta-tarea ${tarea.hecha ? 'completada' : ''}`}>
               <div className="texto">
                 <h3>{tarea.texto}</h3>
-                <span className="badge">{tarea.hecha ? 'Completada' : 'Pendiente'}</span>
               </div>
               
-              {/* SECCIÓN DE BOTONES DE ACCIÓN */}
               <div className="acciones">
                 <button 
-                  onClick={() => alternarEstadoTarea(tarea.id, tarea.hecha)} 
+                  onClick={() => alternarEstadoTarea(tarea._id, tarea.hecha)} 
                   className="btn-estado"
-                  title={tarea.hecha ? "Marcar como pendiente" : "Marcar como completada"}
                 >
                   {tarea.hecha ? '↩️ Desmarcar' : '✅ Completar'}
                 </button>
                 
                 <button 
-                  onClick={() => eliminarTarea(tarea.id)} 
+                  onClick={() => eliminarTarea(tarea._id)} 
                   className="btn-eliminar"
-                  title="Eliminar tarea"
                 >
                   🗑️ Borrar
                 </button>

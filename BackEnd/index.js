@@ -1,55 +1,40 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const Tarea = require('./models/Tarea'); // Importamos el modelo
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Cambiamos a 'let' para poder modificar el arreglo en memoria
-let tareas = [
-    { id: 1, texto: "Instalar Node.js", hecha: true },
-    { id: 2, texto: "Crear el Backend", hecha: true },
-    { id: 3, texto: "Crear el Frontend", hecha: false }
-];
+// Conexión a MongoDB (usaremos una base de datos local o de Atlas)
+mongoose.connect('mongodb://127.0.0.1:27017/gestorTareas')
+    .then(() => console.log('✅ Conectado a MongoDB'))
+    .catch(err => console.error('❌ Error de conexión:', err));
 
-// 1. OBTENER TAREAS (GET)
-app.get('/api/tareas', (req, res) => {
+// 1. OBTENER TAREAS
+app.get('/api/tareas', async (req, res) => {
+    const tareas = await Tarea.find();
     res.json(tareas);
 });
 
-// 2. AGREGAR TAREA (POST)
-app.post('/api/tareas', (req, res) => {
-    const nuevaTarea = {
-        id: Date.now(), // Genera un ID único basado en el tiempo actual
-        texto: req.body.texto,
-        hecha: false
-    };
-    tareas.push(nuevaTarea);
-    res.status(201).json(nuevaTarea); // Respondemos con la tarea creada
+// 2. AGREGAR TAREA
+app.post('/api/tareas', async (req, res) => {
+    const nuevaTarea = new Tarea({ texto: req.body.texto });
+    await nuevaTarea.save();
+    res.status(201).json(nuevaTarea);
 });
 
-// 3. EDITAR / MARCAR COMO COMPLETADA (PUT)
-app.put('/api/tareas/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const tarea = tareas.find(t => t.id === id);
-    
-    if (tarea) {
-        // Si nos mandan 'hecha', lo actualizamos (invierte el estado), si mandan texto nuevo también
-        if (req.body.hecha !== undefined) tarea.hecha = req.body.hecha;
-        if (req.body.texto !== undefined) tarea.texto = req.body.texto;
-        res.json(tarea);
-    } else {
-        res.status(404).json({ mensaje: "Tarea no encontrada" });
-    }
+// 3. EDITAR / COMPLETAR
+app.put('/api/tareas/:id', async (req, res) => {
+    const tarea = await Tarea.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(tarea);
 });
 
-// 4. ELIMINAR TAREA (DELETE)
-app.delete('/api/tareas/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    tareas = tareas.filter(t => t.id !== id);
-    res.json({ mensaje: "Tarea eliminada con éxito" });
+// 4. ELIMINAR TAREA
+app.delete('/api/tareas/:id', async (req, res) => {
+    await Tarea.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: "Tarea eliminada" });
 });
 
-app.listen(3000, () => {
-    console.log('✅ El servidor está corriendo en http://localhost:3000');
-});
+app.listen(3000, () => console.log('Servidor corriendo en puerto 3000'));
