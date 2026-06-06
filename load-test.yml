@@ -1,0 +1,18 @@
+config:
+  target: "http://localhost:8082" # Probamos el servicio de tareas
+  phases:
+    - duration: 60
+      arrivalRate: 20
+      name: "Prueba de carga masiva"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - flow:
+      - post:
+          url: "/api/tareas"
+          json:
+            texto: "Tarea de prueba automática"
+            urgencia: "Alta"
+            hecha: false

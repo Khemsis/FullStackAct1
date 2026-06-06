@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+
+  usuarios:
+    build: ./servicio-usuarios
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+
+  tareas:
+    build: ./servicio-tareas
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mongodb
+
+  frontend:
+    build: ./FrontEnd
+    ports:
+      - "5173:80"
+    depends_on:
+      - usuarios
+      - tareas
